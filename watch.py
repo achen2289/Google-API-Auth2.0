@@ -20,6 +20,7 @@ Supports Python3
 More information is available at
   - https://developers.google.com/gmail/api/v1/reference/users/watch
   - https://developers.google.com/gmail/api/guides/push
+  - https://developers.google.com/gmail/api/auth/web-server
 '''
 
 # replace with OAuth 2.0 credentials of your application
