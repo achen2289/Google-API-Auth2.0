@@ -31,10 +31,11 @@ base_url = r"https://accounts.google.com/o/oauth2/"
 authorization_code = ""
 access_token = ""
 
-'''
-Retrieve authorization_code from authorization API
-'''
-def retrieve_authorization_code():
+
+# Retrieve authorization_code from authorization API
+# Configure web server to retrieve authorization code from redirection 
+# then run with redirect_only set to True (as in call_watch() below)
+def retrieve_authorization_code(redirect_only = False):
   authorization_code_req = {
     "response_type": "code",
     "client_id": client_id,
@@ -49,12 +50,13 @@ def retrieve_authorization_code():
   url = r.headers.get('location')
   Popen(["open", url])
 
+  if redirect_only:
+    print ("Successfully redirected to redirect_uri.")
+    exit(0)
   authorization_code = input("\nAuthorization Code >>> ")
   return authorization_code
 
-'''
-Retrieve access_token and refresh_token from Token API
-'''
+# retrieve access_token and refresh_token from Token API
 def retrieve_tokens(authorization_code):
   access_token_req = {
     "code" : authorization_code,
@@ -70,13 +72,14 @@ def retrieve_tokens(authorization_code):
   data = json.loads(r.text)
   return data
 
-'''
-Make watch API call with proper authorization and access_token
-'''
+
+# make watch API call with proper authorization and access_token
+# may implement into web application and pass in authorization code
 def call_watch(auth_code = None):
   global authorization_code
-  if auth_code == None:
-    authorization_code = retrieve_authorization_code()
+  if auth_code == None: # retrieve authorization code if none provided
+    # authorization_code = retrieve_authorization_code()
+    retrieve_authorization_code(True)
   else:
     authorization_code = auth_code
   tokens = retrieve_tokens(authorization_code)
@@ -97,7 +100,7 @@ def call_watch(auth_code = None):
 
   r = requests.post(url=watch_endpoint, headers=authorization_header, data=request)
   r_json = json.loads(r.text)
-  history_id = r_json['historyId']
+  history_id = r_json['historyId'] # historyId of current mailbox sequence
 
   file = open('start_history_id.txt', 'w+')
   file.write(history_id) # save current history id
