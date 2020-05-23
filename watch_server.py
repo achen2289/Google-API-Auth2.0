@@ -28,6 +28,8 @@ More information is available at
     - https://developers.google.com/identity/protocols/oauth2/web-server#httprest_3
 '''
 
+__author___ = "@achen2289"
+
 # replace with OAuth 2.0 credentials of your application
 client_id = ""
 client_secret = ""
