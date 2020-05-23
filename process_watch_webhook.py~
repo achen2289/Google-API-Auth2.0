@@ -3,7 +3,7 @@ import base64
 
 # Convert Google Pub/Sub webhook into history_id
 # history_id reflects most recent Gmail mailbox sequence
-def process(request):
+def process(request)
 	r = request.json
 	r_d_encoded = r['message']['data']
 	r_d_decoded = base64.b64decode(r_d_encoded.encode('ascii'))
