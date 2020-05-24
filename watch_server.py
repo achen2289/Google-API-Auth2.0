@@ -2,6 +2,7 @@ import requests
 import urllib
 import json
 from subprocess import Popen
+import os.path
 
 import extract_email
 
@@ -18,17 +19,16 @@ Adapted to use authorization to make a call Gmail watch() API
 call on a mailbox to set up push notifications.
 Implemented this script for offline user authorization and
 web application usage.
-Requires prior creation of Google Pub/Sub topic (and subscriber)
 Supports Python3
 
 More information is available at
-    - https://developers.google.com/gmail/api/v1/reference/users/watch
-    - https://developers.google.com/gmail/api/guides/push
-    - https://developers.google.com/gmail/api/auth/web-server
-    - https://developers.google.com/identity/protocols/oauth2/web-server#httprest_3
+	- https://developers.google.com/gmail/api/v1/reference/users/watch
+	- https://developers.google.com/gmail/api/guides/push
+	- https://developers.google.com/gmail/api/auth/web-server
+	- https://developers.google.com/identity/protocols/oauth2/web-server#httprest_3
 '''
 
-__author___ = "@achen2289"
+__author__ = "@achen2289"
 
 # replace with OAuth 2.0 credentials of your application
 client_id = ""
@@ -41,117 +41,117 @@ access_token = ""
 # Retrieve authorization_code from authorization API
 # Once a refresh_token is created, authorization_code is no longer needed
 def retrieve_authorization_code(offline_access = True):
-    authorization_code_req = {
-        "client_id" : client_id,
-        "redirect_uri" : redirect_uri,
-        "access_type" : "offline",
-        "prompt" : "consent",
-        "response_type" : "code",
-        "scope" : (r"https://www.googleapis.com/auth/gmail.readonly")
-        }
+	authorization_code_req = {
+		"client_id" : client_id,
+		"redirect_uri" : redirect_uri,
+		"access_type" : "offline",
+		"prompt" : "consent",
+		"response_type" : "code",
+		"scope" : (r"https://www.googleapis.com/auth/gmail.readonly")
+		}
 
-    # user authentication is required to retrieve the authorization code
-    r = requests.get(base_url + "auth?%s" % urllib.parse.urlencode(authorization_code_req),
-                                     allow_redirects=False)
-    url = r.headers.get('location')
-    Popen(["open", url])
+	# user authentication is required to retrieve the authorization code
+	r = requests.get(base_url + "auth?%s" % urllib.parse.urlencode(authorization_code_req),
+									 allow_redirects=False)
+	url = r.headers.get('location')
+	Popen(["open", url])
 
-    authorization_code = input("\nAuthorization Code >>> ") # determine from redirect uri
-    return authorization_code
+	authorization_code = input("\nAuthorization Code >>> ") # determine from redirect uri
+	return authorization_code
 
 # Retrieve access_token and refresh_token from Token API
 def retrieve_tokens(authorization_code):
-    access_token_req = {
-        "code" : authorization_code,
-        "client_id" : client_id,
-        "client_secret" : client_secret,
-        "redirect_uri" : redirect_uri,
-        "grant_type": "authorization_code",
-        }
-    content_length=len(urllib.parse.urlencode(access_token_req))
-    access_token_req['content-length'] = str(content_length)
+	access_token_req = {
+		"code" : authorization_code,
+		"client_id" : client_id,
+		"client_secret" : client_secret,
+		"redirect_uri" : redirect_uri,
+		"grant_type": "authorization_code",
+		}
+	content_length=len(urllib.parse.urlencode(access_token_req))
+	access_token_req['content-length'] = str(content_length)
 
-    r = requests.post(base_url + "token", data=access_token_req)
-    data = json.loads(r.text)
-    return data
+	r = requests.post(base_url + "token", data=access_token_req)
+	data = json.loads(r.text)
+	return data
 
 # Get new_access_token from refresh_token
 def new_access_token(refresh_token):
-    refresh_token_req = {
-        "client_id" : client_id,
-        "client_secret" : client_secret,
-        "grant_type" : "refresh_token",
-        "refresh_token" : refresh_token
-    }
+	refresh_token_req = {
+		"client_id" : client_id,
+		"client_secret" : client_secret,
+		"grant_type" : "refresh_token",
+		"refresh_token" : refresh_token
+	}
 
-    r = requests.post(base_url + "token", data=refresh_token_req)
-    data = json.loads(r.text)
-    new_access_token = data['access_token']
-    print ("New access token generated!")
-    return new_access_token
+	r = requests.post(base_url + "token", data=refresh_token_req)
+	data = json.loads(r.text)
+	new_access_token = data['access_token']
+	print ("New access token generated!")
+	return new_access_token
 
 # Link together authorization and authentication steps
 # Write codes and tokens to files in directory for simplicity
 def main():
-    global authorization_code
-    try: # get authorization_code in case access_token must be created
-        with open('auth_code.txt', 'r') as f:
-            authorization_code = f.readlines()[0]
-    except FileNotFoundError:
-        authorization_code = retrieve_authorization_code()
-        with open('auth_code.txt', 'w+') as f:
-            f.write(authorization_code)
+	global authorization_code
+	try: # get authorization_code in case access_token must be created
+		with open('auth_code.txt', 'r') as f:
+			authorization_code = f.readlines()[0]
+	except FileNotFoundError:
+		authorization_code = retrieve_authorization_code()
+		with open('auth_code.txt', 'w+') as f:
+			f.write(authorization_code)
 
-    # get access token, or create one if have not yet
-    try:
-        with open('access_token.txt', 'r') as f:
-            access_token = f.readlines()[0]
-        with open('refresh_token.txt', 'r') as f:
-            refresh_token = f.readlines()[0]
-    # create access_token and refresh_token if no access_token exists
-    except FileNotFoundError:
-        tokens = retrieve_tokens(authorization_code)
-        access_token = tokens['access_token']
-        with open('access_token.txt', 'w+') as f:
-            f.write(access_token)
-        refresh_token = tokens['refresh_token']
-        with open('refresh_token.txt', 'w+') as f:
-            f.write(refresh_token)
+	# get access token, or create one if have not yet
+	try:
+		with open('access_token.txt', 'r') as f:
+			access_token = f.readlines()[0]
+		with open('refresh_token.txt', 'r') as f:
+			refresh_token = f.readlines()[0]
+	# create access_token and refresh_token if no access_token exists
+	except FileNotFoundError:
+		tokens = retrieve_tokens(authorization_code)
+		access_token = tokens['access_token']
+		with open('access_token.txt', 'w+') as f:
+			f.write(access_token)
+		refresh_token = tokens['refresh_token']
+		with open('refresh_token.txt', 'w+') as f:
+			f.write(refresh_token)
 
-    call_watch(refresh_token)
+	call_watch(refresh_token)
 
 # Make watch API call with proper authorization and access_token/refresh_token
 # Watch call output of historyId is stored in start_history_id.txt
+# Can be called on a scheduled process without losing data on history_id processing end
 def call_watch(refresh_token):
-    access_token = new_access_token(refresh_token) # ensure that the token has not expired
-    authorization_header = {"Authorization": "OAuth %s" % access_token}
+	access_token = new_access_token(refresh_token) # ensure that the token has not expired
+	authorization_header = {"Authorization": "OAuth %s" % access_token}
 
-    user_id = 'me'
-    watch_endpoint = 'https://www.googleapis.com/gmail/v1/users/' + user_id + '/watch'
+	user_id = 'me'
+	watch_endpoint = 'https://www.googleapis.com/gmail/v1/users/' + user_id + '/watch'
 
-    label_ids = ['INBOX']
-    labelFilterAction = 'include'
-    topic_name = '' # insert name of Google Pub/Sub topic
+	label_ids = ['INBOX']
+	labelFilterAction = 'include'
+	topic_name = 'projects/delivery-consolidation-277305/topics/food-deliveries'
 
-    request = {}
-    request['labelIds'] = label_ids
-    request['labelFilterAction'] = labelFilterAction
-    request['topicName'] = topic_name
+	request = {}
+	request['labelIds'] = label_ids
+	request['labelFilterAction'] = labelFilterAction
+	request['topicName'] = topic_name
 
-    r = requests.post(url=watch_endpoint, headers=authorization_header, data=request)
-    r_json = json.loads(r.text)
-    history_id = r_json['historyId'] # historyId of current mailbox sequence
+	# make watch call with appropriate header and body
+	r = requests.post(url=watch_endpoint, headers=authorization_header, data=request)
+	r_json = json.loads(r.text)
+	history_id = r_json['historyId'] # historyId of current mailbox sequence
 
-    f = open('start_history_id.txt', 'w+')
-    if len(f.readlines()) != 0:
-        f.close()
-        extract_email.fetchMail(history_id) # flush out any emails that need to be processed
-    else:
-        f.write(history_id) # save current history id to file
-        f.close()
+	history_id_file = os.path.isfile('start_history_id.txt') 
+	if history_id_file != True: # if file exists, skip
+		with open('start_history_id.txt', 'w+') as f:
+			f.write(history_id) # save current history id to file if file doesn't exist
+			print ("history_id successfully stored!")
 
-    print (history_id)
-    return
+	print ("history_id: ", history_id)
+	return
 
 if __name__ == '__main__':
-    main()
+	main()
